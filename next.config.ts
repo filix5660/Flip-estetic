@@ -1,8 +1,6 @@
 import type { NextConfig } from "next";
 
-// O Next já compila CSS global e CSS Modules nativamente.
-// Não aplicar o loader do Tailwind a todos os ficheiros .css:
-// isso quebra seletores de CSS Modules como :global(...).
+// O Tailwind CSS v4 é processado via PostCSS (ver postcss.config.mjs).
 const nextConfig: NextConfig = {};
 
 export default nextConfig;
