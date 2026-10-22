@@ -1,0 +1,218 @@
+// Esquema da base de dados (PostgreSQL) para o Flip Estética.
+// Espelha os tipos de `lib/tipos.ts`. Ver docs/BACKEND.md para os passos de ligação.
+//
+// Convenções:
+// - Datas de calendário: @db.Date, sempre no fuso horário do negócio.
+// - Horas do dia: inteiros em minutos desde a meia-noite (09:30 = 570).
+// - Preços: inteiros em cêntimos.
+// - Os horários livres NÃO são guardados: calculam-se a partir destas regras.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plano {
+  solo
+  equipa
+}
+
+enum TipoNegocio {
+  barbearia
+  salao
+  estetica
+  unhas
+  outro
+}
+
+enum ModoVagas {
+  duracao_servico
+  intervalo_fixo
+}
+
+enum EstadoMarcacao {
+  confirmada
+  concluida
+  cancelada
+  falta
+}
+
+enum OrigemMarcacao {
+  online
+  manual
+}
+
+/// Dono da conta (preenchido quando a autenticação for ligada).
+model Utilizador {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  nome      String
+  criadoEm  DateTime  @default(now())
+  negocios  Negocio[]
+}
+
+model Negocio {
+  id           String      @id @default(cuid())
+  slug         String      @unique
+  nome         String
+  tipo         TipoNegocio @default(outro)
+  apresentacao String      @default("")
+  morada       String      @default("")
+  telefone     String      @default("")
+  corPrincipal String      @default("#2b2620")
+  logotipoUrl  String?
+  fusoHorario  String      @default("Europe/Lisbon")
+  plano        Plano       @default(solo)
+
+  // Regras de marcação (RegrasMarcacao)
+  modoVagas              ModoVagas @default(duracao_servico)
+  intervaloFixoMin       Int       @default(30)
+  folgaEntreMarcacoesMin Int       @default(0)
+  antecedenciaMinimaMin  Int       @default(60)
+  janelaMarcacaoDias     Int       @default(60)
+
+  donoId   String?
+  dono     Utilizador? @relation(fields: [donoId], references: [id])
+  criadoEm DateTime    @default(now())
+
+  profissionais Profissional[]
+  servicos      Servico[]
+  clientes      Cliente[]
+  marcacoes     Marcacao[]
+}
+
+model Profissional {
+  id        String  @id @default(cuid())
+  negocioId String
+  negocio   Negocio @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  nome      String
+  cargo     String  @default("")
+  cor       String  @default("#8a6a4b")
+  ativo     Boolean @default(true)
+
+  servicos      ServicoProfissional[]
+  periodos      PeriodoSemanal[]
+  diasEspeciais DiaEspecial[]
+  bloqueios     Bloqueio[]
+  marcacoes     Marcacao[]
+
+  @@index([negocioId])
+}
+
+model Servico {
+  id            String  @id @default(cuid())
+  negocioId     String
+  negocio       Negocio @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  nome          String
+  descricao     String  @default("")
+  duracaoMin    Int
+  precoCentimos Int
+  ativo         Boolean @default(true)
+
+  profissionais ServicoProfissional[]
+  marcacoes     Marcacao[]
+
+  @@index([negocioId])
+}
+
+/// Que profissionais fazem cada serviço.
+model ServicoProfissional {
+  servicoId      String
+  profissionalId String
+  servico        Servico      @relation(fields: [servicoId], references: [id], onDelete: Cascade)
+  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@id([servicoId, profissionalId])
+}
+
+/// Horário semanal: um registo por período. Dia sem registos = não trabalha.
+/// As pausas são os espaços entre períodos do mesmo dia.
+model PeriodoSemanal {
+  id             String       @id @default(cuid())
+  profissionalId String
+  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  diaSemana      Int // 0 = domingo … 6 = sábado
+  inicioMin      Int
+  fimMin         Int
+
+  @@index([profissionalId, diaSemana])
+}
+
+/// Folgas, férias ou horário diferente num intervalo de datas.
+/// Sem períodos = não trabalha nesses dias.
+model DiaEspecial {
+  id             String              @id @default(cuid())
+  profissionalId String
+  profissional   Profissional        @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  dataInicio     DateTime            @db.Date
+  dataFim        DateTime            @db.Date
+  motivo         String              @default("")
+  periodos       DiaEspecialPeriodo[]
+  criadoEm       DateTime            @default(now())
+
+  @@index([profissionalId, dataInicio, dataFim])
+}
+
+model DiaEspecialPeriodo {
+  id            String      @id @default(cuid())
+  diaEspecialId String
+  diaEspecial   DiaEspecial @relation(fields: [diaEspecialId], references: [id], onDelete: Cascade)
+  inicioMin     Int
+  fimMin        Int
+}
+
+/// Fecha algumas horas numa data concreta.
+model Bloqueio {
+  id             String       @id @default(cuid())
+  profissionalId String
+  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  data           DateTime     @db.Date
+  inicioMin      Int
+  fimMin         Int
+  motivo         String       @default("")
+
+  @@index([profissionalId, data])
+}
+
+model Cliente {
+  id        String     @id @default(cuid())
+  negocioId String
+  negocio   Negocio    @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  nome      String
+  telefone  String // normalizado (só dígitos e +)
+  email     String     @default("")
+  notas     String     @default("")
+  criadoEm  DateTime   @default(now())
+  marcacoes Marcacao[]
+
+  @@unique([negocioId, telefone])
+}
+
+model Marcacao {
+  id             String         @id @default(cuid())
+  negocioId      String
+  negocio        Negocio        @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  profissionalId String
+  profissional   Profissional   @relation(fields: [profissionalId], references: [id])
+  servicoId      String
+  servico        Servico        @relation(fields: [servicoId], references: [id])
+  clienteId      String
+  cliente        Cliente        @relation(fields: [clienteId], references: [id])
+  data           DateTime       @db.Date
+  inicioMin      Int
+  fimMin         Int
+  estado         EstadoMarcacao @default(confirmada)
+  origem         OrigemMarcacao @default(online)
+  precoCentimos  Int
+  notas          String         @default("")
+  criadaEm       DateTime       @default(now())
+
+  // Impedir sobreposições ao nível da base de dados: ver prisma/sql/sem-sobreposicao.sql
+  @@index([negocioId, data])
+  @@index([profissionalId, data])
+  @@index([clienteId])
+}

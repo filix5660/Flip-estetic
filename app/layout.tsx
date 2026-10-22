@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -13,11 +14,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Flip Estética | Marcações",
-  description: "Marcações e gestão de serviços de beleza.",
+  title: {
+    default: "Flip Estética · Marcações online para salões e barbearias",
+    template: "%s · Flip Estética",
+  },
+  description: "Marcações online e gestão de agenda para salões, barbearias e clínicas de estética.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-PT" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>{children}</body>
