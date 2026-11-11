@@ -20,3 +20,19 @@
 .nav a:focus-visible {
   background: var(--color-page);
 }
+
+.signOut {
+  margin-left: auto;
+}
+
+.signOut button {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-muted);
+}
+
+.signOut button:hover {
+  background: var(--color-page);
+}

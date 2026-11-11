@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { sair } from "@/app/(auth)/acoes";
+import { supabaseConfigurado } from "@/lib/supabase/config";
 import styles from "./navegacao-gestao.module.css";
 
 export default function NavegacaoGestao() {
@@ -9,6 +11,11 @@ export default function NavegacaoGestao() {
       <Link href="/gestao/servicos">Serviços</Link>
       <Link href="/gestao/horarios">Horários</Link>
       <Link href="/gestao/pagina-publica">Página pública</Link>
+      {supabaseConfigurado && (
+        <form className={styles.signOut} action={sair}>
+          <button type="submit">Sair</button>
+        </form>
+      )}
     </nav>
   );
 }

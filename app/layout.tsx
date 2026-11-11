@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Flip Estética | Marcações",
-  description: "Marcações e gestão de serviços de beleza.",
+  title: "Flip | Gestão de salões",
+  description:
+    "Marcações online, agenda e resumo de ganhos para salões de estética, cabeleireiros e barbearias.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

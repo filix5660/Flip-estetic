@@ -1,0 +1,29 @@
+.etiqueta {
+  display: inline-block;
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.marcada {
+  background: #eef1f6;
+  color: #3d4f6b;
+}
+
+.concluida {
+  background: #e7f2e8;
+  color: #2f6b38;
+}
+
+.faltou {
+  background: #f8e9e6;
+  color: #9a3d2c;
+}
+
+.cancelada {
+  background: #efedea;
+  color: var(--color-muted);
+}
