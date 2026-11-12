@@ -1,97 +1,99 @@
 "use server";
 
-/** Server Actions usadas pela página pública de marcação. */
+// Ações da página pública de marcação. Quem as chama é um visitante sem
+// conta, por isso o navegador só envia o que escolheu (serviço, dia, hora,
+// nome, contacto). Preço, duração, profissional e disponibilidade são sempre
+// decididos pela base de dados (funções horarios_livres e criar_marcacao).
 
-import { repo } from "@/lib/dados";
-import { diasComVaga, reservar, vagasDoDia, type Vaga } from "@/lib/agendamento";
-import { ehDataValida, type DataISO } from "@/lib/tempo";
-import type { Resultado } from "@/lib/tipos";
-import { emailValido, telefoneValido } from "@/lib/validar";
+import { revalidatePath } from "next/cache";
+import {
+  listarServicos,
+  obterAgora,
+  obterHorariosSemanais,
+  obterSalaoPorSlug,
+} from "@/lib/dados";
+import { horariosDeExemplo } from "@/lib/disponibilidade";
+import type { Hora } from "@/lib/modelo";
+import { erro, ERRO_DADOS, sucesso, type Resultado } from "@/lib/resultado";
+import { supabaseConfigurado } from "@/lib/supabase/config";
+import { criarClientePublico } from "@/lib/supabase/servidor";
+import {
+  esquemaHorariosLivres,
+  esquemaNovaMarcacao,
+  UUID_VALIDO,
+} from "@/lib/validacao";
 
-async function carregar(slug: string, servicoId: string) {
-  const negocio = await repo.negocios.porSlug(slug);
-  if (!negocio) return null;
-  const servico = await repo.servicos.porId(servicoId);
-  if (!servico || servico.negocioId !== negocio.id || !servico.ativo) return null;
-  return { negocio, servico };
-}
+const ERRO_HORARIOS = "Não foi possível carregar os horários. Tenta novamente.";
 
-export async function carregarDiasComVaga(
-  slug: string,
-  servicoId: string,
-  profissionalId: string | null,
-  ano: number,
-  mes: number,
-): Promise<Resultado<DataISO[]>> {
-  const ctx = await carregar(slug, servicoId);
-  if (!ctx) return { ok: false, erro: "Serviço indisponível." };
-  if (!Number.isInteger(ano) || !Number.isInteger(mes) || mes < 1 || mes > 12) {
-    return { ok: false, erro: "Mês inválido." };
+export async function obterHorariosLivres(entrada: unknown): Promise<Resultado<Hora[]>> {
+  const dados = esquemaHorariosLivres.safeParse(entrada);
+  if (!dados.success) return erro(ERRO_DADOS);
+  const { slug, servicoId, data } = dados.data;
+
+  if (!supabaseConfigurado) {
+    const salao = await obterSalaoPorSlug(slug);
+    if (!salao) return erro(ERRO_DADOS);
+    const [servicos, horarios, agora] = await Promise.all([
+      listarServicos(salao.id),
+      obterHorariosSemanais(salao.id),
+      obterAgora(salao.fusoHorario),
+    ]);
+    const servico = servicos.find((s) => s.id === servicoId);
+    if (!servico) return erro(ERRO_DADOS);
+    return sucesso(horariosDeExemplo(data, servico, horarios, agora.hoje, agora.hora));
   }
-  const dias = await diasComVaga(ctx.negocio, ctx.servico, profissionalId, ano, mes);
-  return { ok: true, dados: dias };
-}
 
-export async function carregarHorarios(
-  slug: string,
-  servicoId: string,
-  profissionalId: string | null,
-  data: DataISO,
-): Promise<Resultado<Vaga[]>> {
-  const ctx = await carregar(slug, servicoId);
-  if (!ctx) return { ok: false, erro: "Serviço indisponível." };
-  if (!ehDataValida(data)) return { ok: false, erro: "Data inválida." };
-  const vagas = await vagasDoDia(ctx.negocio, ctx.servico, profissionalId, data);
-  return { ok: true, dados: vagas };
-}
-
-export interface PedidoPublico {
-  servicoId: string;
-  profissionalId: string | null;
-  data: DataISO;
-  inicioMin: number;
-  nome: string;
-  telefone: string;
-  email: string;
-  notas: string;
-}
-
-export interface MarcacaoConfirmada {
-  id: string;
-  profissionalNome: string;
-}
-
-export async function confirmarMarcacao(
-  slug: string,
-  pedido: PedidoPublico,
-): Promise<Resultado<MarcacaoConfirmada>> {
-  const negocio = await repo.negocios.porSlug(slug);
-  if (!negocio) return { ok: false, erro: "Negócio não encontrado." };
-
-  if (pedido.nome.trim().length < 2) return { ok: false, erro: "Indica o teu nome." };
-  if (!telefoneValido(pedido.telefone)) return { ok: false, erro: "Indica um telefone válido." };
-  if (pedido.email && !emailValido(pedido.email)) return { ok: false, erro: "O email não parece válido." };
-  if (!ehDataValida(pedido.data)) return { ok: false, erro: "Data inválida." };
-
-  const resultado = await reservar({
-    negocio,
-    servicoId: pedido.servicoId,
-    profissionalId: pedido.profissionalId,
-    data: pedido.data,
-    inicioMin: pedido.inicioMin,
-    cliente: { nome: pedido.nome, telefone: pedido.telefone, email: pedido.email },
-    notas: pedido.notas.slice(0, 500),
-    origem: "online",
+  if (!UUID_VALIDO.test(servicoId)) return erro(ERRO_DADOS);
+  const { data: linhas, error } = await criarClientePublico().rpc("horarios_livres", {
+    p_slug: slug,
+    p_servico_id: servicoId,
+    p_data: data,
   });
-  if (!resultado.ok) return resultado;
+  if (error) {
+    console.error("[marcacao] horarios_livres:", error.code, error.message);
+    return erro(ERRO_HORARIOS);
+  }
 
-  const profissionais = await repo.profissionais.listar(negocio.id);
-  const profissional = profissionais.find((p) => p.id === resultado.dados.profissionalId);
+  return sucesso(
+    (linhas as { inicio: string }[]).map((linha) => linha.inicio.slice(0, 5)),
+  );
+}
 
-  // TODO(notificações): enviar confirmação por SMS/WhatsApp/email ao cliente
-  // e avisar o profissional.
-  return {
-    ok: true,
-    dados: { id: resultado.dados.id, profissionalNome: profissional?.nome ?? "" },
-  };
+const ERROS_MARCACAO: Record<string, string> = {
+  HORARIO_INDISPONIVEL: "Esse horário acabou de ser ocupado. Escolhe outro.",
+  LIMITE_CONTACTO:
+    "Já tens várias marcações por realizar neste salão. Para marcar mais, contacta o salão.",
+  LIMITE_PLANO: "Este salão não está a aceitar marcações online neste mês. Contacta o salão.",
+  LIMITE_TEMPORARIO: "Há muitos pedidos neste momento. Tenta de novo daqui a pouco.",
+  DADOS_INVALIDOS: ERRO_DADOS,
+  SALAO_NAO_ENCONTRADO: ERRO_DADOS,
+};
+
+export async function criarMarcacao(entrada: unknown): Promise<Resultado> {
+  const dados = esquemaNovaMarcacao.safeParse(entrada);
+  if (!dados.success) {
+    return erro("Verifica o nome e o contacto (telefone ou email).");
+  }
+  const { slug, servicoId, data, hora, nome, contacto } = dados.data;
+
+  // Modo de demonstração: nada é guardado.
+  if (!supabaseConfigurado) return sucesso(undefined);
+
+  if (!UUID_VALIDO.test(servicoId)) return erro(ERRO_DADOS);
+  const { error } = await criarClientePublico().rpc("criar_marcacao", {
+    p_slug: slug,
+    p_servico_id: servicoId,
+    p_data: data,
+    p_inicio: hora,
+    p_nome: nome,
+    p_contacto: contacto,
+  });
+  if (error) {
+    const conhecido = ERROS_MARCACAO[error.message];
+    if (!conhecido) console.error("[marcacao] criar_marcacao:", error.code, error.message);
+    return erro(conhecido ?? "Não foi possível concluir a marcação. Tenta novamente.");
+  }
+
+  revalidatePath("/gestao", "layout");
+  return sucesso(undefined);
 }

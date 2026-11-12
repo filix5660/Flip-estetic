@@ -1,31 +1,27 @@
-import type { Metadata } from "next";
-import { CabecalhoPagina } from "@/components/ui";
-import { repo } from "@/lib/dados";
-import { obterNegocioAtual } from "@/lib/sessao";
-import { GestorServicos } from "./gestor-servicos";
+import { listarServicos } from "@/lib/dados";
+import { obterSalaoDaSessao } from "@/lib/sessao";
+import NavegacaoGestao from "../navegacao-gestao";
+import EditorServicos from "./editor-servicos";
+import styles from "./page.module.css";
 
-export const metadata: Metadata = { title: "Serviços" };
-
-export default async function Servicos() {
-  const negocio = await obterNegocioAtual();
-  const [servicos, profissionais] = await Promise.all([
-    repo.servicos.listar(negocio.id),
-    repo.profissionais.listar(negocio.id),
-  ]);
+export default async function ServicosPage() {
+  const salao = await obterSalaoDaSessao();
+  const servicos = await listarServicos(salao.id);
 
   return (
-    <>
-      <CabecalhoPagina
-        titulo="Serviços"
-        descricao="O que ofereces, quanto tempo demora e quanto custa. A duração define as vagas que os clientes veem."
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <p>ÁREA DO NEGÓCIO</p>
+        <h1>Serviços</h1>
+        <p>Consulta e gere os serviços oferecidos pelo teu negócio.</p>
+      </header>
+
+      <NavegacaoGestao />
+
+      <EditorServicos
+        plano={salao.plano}
+        servicosIniciais={servicos}
       />
-      <GestorServicos
-        servicos={servicos}
-        profissionais={profissionais.map((p) => ({ id: p.id, nome: p.nome, cor: p.cor }))}
-        plano={negocio.plano}
-        modoVagas={negocio.regras.modoVagas}
-        intervaloFixoMin={negocio.regras.intervaloFixoMin}
-      />
-    </>
+    </main>
   );
 }

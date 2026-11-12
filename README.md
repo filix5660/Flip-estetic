@@ -1,36 +1,36 @@
-# Flip Estética
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-SaaS de marcações e gestão para salões, barbearias e clínicas de estética.
-Next.js 16 · React 19 · Tailwind CSS 4 · TypeScript.
+## Getting Started
 
-## Começar
+First, run the development server:
 
 ```bash
-npm install
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Abre <http://localhost:3000>.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-| Endereço | O quê |
-| --- | --- |
-| `/` | Página inicial e planos |
-| `/barbearia-central` | Página de marcação de exemplo (plano Equipa, 2 profissionais) |
-| `/estudio-bela` | Página de marcação de exemplo (plano Solo, horários fixos de 30 min) |
-| `/gestao` | Área do proprietário (painel, agenda, serviços, horários, equipa, clientes, página pública, plano) |
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-Na barra lateral da gestão há um seletor de demonstração para alternar entre os dois negócios.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Scripts
+## Learn More
 
-- `npm run dev` — servidor de desenvolvimento
-- `npm run build` — build de produção
-- `npm run lint` — ESLint
-- `npm test` — testes do cálculo de vagas
+To learn more about Next.js, take a look at the following resources:
 
-## Dados
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-Por agora os dados vivem em memória e voltam ao estado inicial quando o servidor reinicia.
-A estrutura está pronta para PostgreSQL: vê [docs/BACKEND.md](docs/BACKEND.md).
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-Documentação geral do código: [docs/DOCUMENTACAO.md](docs/DOCUMENTACAO.md).
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

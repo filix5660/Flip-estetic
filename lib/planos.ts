@@ -1,38 +1,70 @@
-import type { Plano } from "./tipos";
+import type { IdPlano } from "./modelo";
 
-export interface DefinicaoPlano {
-  id: Plano;
+// ATENÇÃO: preços e limites abaixo são provisórios, só para o sistema já
+// saber trabalhar com planos. Definir os valores reais antes de lançar.
+
+export type Plano = {
+  id: IdPlano;
   nome: string;
-  resumo: string;
-  maxProfissionais: number;
-  recursos: string[];
-}
+  /** null = ainda por definir */
+  precoMensalCentimos: number | null;
+  /** null = sem limite */
+  limites: {
+    profissionais: number | null;
+    servicos: number | null;
+    marcacoesPorMes: number | null;
+  };
+  recursos: {
+    logotipoECor: boolean;
+    relatoriosMensais: boolean;
+    comissoes: boolean;
+  };
+};
 
-export const PLANOS: Record<Plano, DefinicaoPlano> = {
-  solo: {
-    id: "solo",
-    nome: "Solo",
-    resumo: "Para quem trabalha sozinho.",
-    maxProfissionais: 1,
-    recursos: [
-      "Página de marcação com o teu link",
-      "Serviços e horários ilimitados",
-      "Agenda e lista de clientes",
-    ],
+export const planos: Record<IdPlano, Plano> = {
+  demo: {
+    id: "demo",
+    nome: "Demonstração",
+    precoMensalCentimos: 0,
+    limites: { profissionais: 1, servicos: 5, marcacoesPorMes: 50 },
+    recursos: {
+      logotipoECor: false,
+      relatoriosMensais: false,
+      comissoes: false,
+    },
   },
-  equipa: {
-    id: "equipa",
-    nome: "Equipa",
-    resumo: "Para salões com mais de um profissional.",
-    maxProfissionais: 15,
-    recursos: [
-      "Tudo o que está no Solo",
-      "Até 15 profissionais, cada um com a sua agenda",
-      "O cliente escolhe com quem quer marcar",
-    ],
+  essencial: {
+    id: "essencial",
+    nome: "Essencial",
+    precoMensalCentimos: null,
+    limites: { profissionais: 3, servicos: null, marcacoesPorMes: null },
+    recursos: {
+      logotipoECor: true,
+      relatoriosMensais: true,
+      comissoes: false,
+    },
+  },
+  profissional: {
+    id: "profissional",
+    nome: "Profissional",
+    precoMensalCentimos: null,
+    limites: { profissionais: null, servicos: null, marcacoesPorMes: null },
+    recursos: {
+      logotipoECor: true,
+      relatoriosMensais: true,
+      comissoes: true,
+    },
   },
 };
 
-export function podeAdicionarProfissional(plano: Plano, totalAtual: number) {
-  return totalAtual < PLANOS[plano].maxProfissionais;
+export type Limite = keyof Plano["limites"];
+
+/** true se o salão já usou tudo o que o plano permite para este limite. */
+export function limiteAtingido(
+  plano: IdPlano,
+  limite: Limite,
+  quantidadeAtual: number,
+) {
+  const maximo = planos[plano].limites[limite];
+  return maximo !== null && quantidadeAtual >= maximo;
 }

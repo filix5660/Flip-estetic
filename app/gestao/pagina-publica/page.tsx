@@ -1,34 +1,31 @@
-import type { Metadata } from "next";
-import { CabecalhoPagina } from "@/components/ui";
-import { repo } from "@/lib/dados";
-import { obterNegocioAtual } from "@/lib/sessao";
-import { EditorPagina } from "./editor-pagina";
+import { listarServicos } from "@/lib/dados";
+import { planos } from "@/lib/planos";
+import { obterSalaoDaSessao } from "@/lib/sessao";
+import NavegacaoGestao from "../navegacao-gestao";
+import EditorPagina from "./editor-pagina";
+import styles from "./page.module.css";
 
-export const metadata: Metadata = { title: "Página pública" };
-
-export default async function PaginaPublica() {
-  const negocio = await obterNegocioAtual();
-  const servicos = (await repo.servicos.listar(negocio.id)).filter((s) => s.ativo);
+export default async function PaginaPublicaPage() {
+  const salao = await obterSalaoDaSessao();
+  const servicos = await listarServicos(salao.id);
+  const plano = planos[salao.plano];
 
   return (
-    <>
-      <CabecalhoPagina
-        titulo="Página pública"
-        descricao="Personaliza o que os clientes veem antes de marcar."
-      />
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <p>ÁREA DO NEGÓCIO</p>
+        <h1>Página pública</h1>
+        <p>Personaliza o que os clientes veem antes de fazer uma marcação.</p>
+      </header>
+
+      <NavegacaoGestao />
+
       <EditorPagina
-        inicial={{
-          nome: negocio.nome,
-          slug: negocio.slug,
-          tipo: negocio.tipo,
-          apresentacao: negocio.apresentacao,
-          morada: negocio.morada,
-          telefone: negocio.telefone,
-          corPrincipal: negocio.corPrincipal,
-          logotipoUrl: negocio.logotipoUrl,
-        }}
-        servicos={servicos.slice(0, 3).map((s) => ({ nome: s.nome, duracaoMin: s.duracaoMin, precoCentimos: s.precoCentimos }))}
+        salao={salao}
+        servicos={servicos.filter((s) => s.ativo)}
+        nomePlano={plano.nome}
+        permiteLogotipoECor={plano.recursos.logotipoECor}
       />
-    </>
+    </main>
   );
 }
