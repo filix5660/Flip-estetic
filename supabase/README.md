@@ -17,8 +17,22 @@ No painel: **SQL Editor → New query**. Corre cada ficheiro de `migrations/`, *
 2. `20261112100000_plano_demo_so_agenda.sql` (plano grátis só com agenda; marcação anotada pelo dono)
 3. `20261112110000_plano_demo_sem_limite_servicos.sql` (plano grátis sem limite de serviços)
 4. `20261117000000_essencial_um_profissional.sql` (plano Essencial só com 1 profissional)
+5. `20261117010000_painel_admin.sql` (painel de controlo em /admin)
 
 Cada um tem de terminar com "Success. No rows returned". Um ficheiro já aplicado não se corre outra vez.
+
+## Tornar-te administrador (painel /admin)
+
+Depois de criares a tua conta no site, corre no SQL Editor (com o teu email):
+
+```sql
+insert into private.administradores (user_id)
+select id from auth.users where email = 'o-teu-email@exemplo.com';
+```
+
+Só dá para fazer isto no SQL Editor: a aplicação não tem forma de criar administradores.
+O painel lista os salões e permite mudar o plano e marcar contas de cortesia
+(demonstração, parceiros). Cada alteração fica em `private.registo_admin`.
 
 ## 3. Configurar o login
 

@@ -7,7 +7,7 @@ import {
   supabaseConfigurado,
 } from "./config";
 
-const ROTAS_PRIVADAS = ["/gestao", "/comecar"];
+const ROTAS_PRIVADAS = ["/gestao", "/comecar", "/admin"];
 const ROTAS_DE_ENTRADA = ["/entrar", "/criar-conta"];
 
 function corresponde(caminho: string, rotas: string[]) {
