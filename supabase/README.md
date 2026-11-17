@@ -16,6 +16,7 @@ No painel: **SQL Editor → New query**. Corre cada ficheiro de `migrations/`, *
 1. `20261111000000_esquema_inicial.sql`
 2. `20261112100000_plano_demo_so_agenda.sql` (plano grátis só com agenda; marcação anotada pelo dono)
 3. `20261112110000_plano_demo_sem_limite_servicos.sql` (plano grátis sem limite de serviços)
+4. `20261117000000_essencial_um_profissional.sql` (plano Essencial só com 1 profissional)
 
 Cada um tem de terminar com "Success. No rows returned". Um ficheiro já aplicado não se corre outra vez.
 
