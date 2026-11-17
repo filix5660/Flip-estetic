@@ -29,6 +29,8 @@ type Props = {
   hoje: Data;
   /** false no modo de demonstração: a marcação não fica guardada. */
   guardaMarcacoes: boolean;
+  /** false quando o plano do salão não inclui marcações online. */
+  aceitaMarcacoes: boolean;
 };
 
 export default function FluxoMarcacao({
@@ -37,6 +39,7 @@ export default function FluxoMarcacao({
   horarios,
   hoje,
   guardaMarcacoes,
+  aceitaMarcacoes,
 }: Props) {
   const [etapa, setEtapa] = useState(0);
   const [servico, setServico] = useState<Servico | null>(null);
@@ -132,10 +135,17 @@ export default function FluxoMarcacao({
               </article>
             ))}
 
-            {servicos.length > 0 && (
+            {servicos.length > 0 && aceitaMarcacoes && (
               <button className={styles.primaryButton} type="button" onClick={() => setEtapa(1)}>
                 Marcar horário
               </button>
+            )}
+
+            {!aceitaMarcacoes && (
+              <p className={styles.details}>
+                Este salão ainda não recebe marcações online.
+                {salao.telefone ? ` Para marcar, contacta ${salao.telefone}.` : ""}
+              </p>
             )}
           </>
         )}

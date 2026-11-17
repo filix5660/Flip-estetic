@@ -20,6 +20,13 @@ export default async function PaginaPublicaPage() {
 
       <NavegacaoGestao />
 
+      {!plano.recursos.marcacoesOnline && (
+        <p className={styles.aviso}>
+          No plano {plano.nome} a tua página mostra os serviços e o contacto, mas os clientes
+          ainda não podem marcar online. As marcações online começam no plano Essencial.
+        </p>
+      )}
+
       <EditorPagina
         salao={salao}
         servicos={servicos.filter((s) => s.ativo)}

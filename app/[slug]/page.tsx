@@ -6,6 +6,7 @@ import {
   obterHorariosSemanais,
   obterSalaoPorSlug,
 } from "@/lib/dados";
+import { planos } from "@/lib/planos";
 import { supabaseConfigurado } from "@/lib/supabase/config";
 import FluxoMarcacao from "./fluxo-marcacao";
 
@@ -40,6 +41,7 @@ export default async function PaginaSalao(props: PageProps<"/[slug]">) {
       horarios={horarios}
       hoje={agora.hoje}
       guardaMarcacoes={supabaseConfigurado}
+      aceitaMarcacoes={planos[salao.plano].recursos.marcacoesOnline}
     />
   );
 }

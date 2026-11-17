@@ -1,7 +1,7 @@
 import type { IdPlano } from "./modelo";
 
-// ATENÇÃO: preços e limites abaixo são provisórios, só para o sistema já
-// saber trabalhar com planos. Definir os valores reais antes de lançar.
+// Preços mensais com IVA incluído (definidos a 2026-11-12).
+// Os limites existem também na tabela `planos` da base de dados: alterar os dois.
 
 export type Plano = {
   id: IdPlano;
@@ -15,6 +15,8 @@ export type Plano = {
     marcacoesPorMes: number | null;
   };
   recursos: {
+    /** Os clientes podem marcar na página pública. Igual a planos.marcacoes_online na base de dados. */
+    marcacoesOnline: boolean;
     logotipoECor: boolean;
     relatoriosMensais: boolean;
     comissoes: boolean;
@@ -26,8 +28,9 @@ export const planos: Record<IdPlano, Plano> = {
     id: "demo",
     nome: "Demonstração",
     precoMensalCentimos: 0,
-    limites: { profissionais: 1, servicos: 5, marcacoesPorMes: 50 },
+    limites: { profissionais: 1, servicos: null, marcacoesPorMes: null },
     recursos: {
+      marcacoesOnline: false,
       logotipoECor: false,
       relatoriosMensais: false,
       comissoes: false,
@@ -36,9 +39,10 @@ export const planos: Record<IdPlano, Plano> = {
   essencial: {
     id: "essencial",
     nome: "Essencial",
-    precoMensalCentimos: null,
+    precoMensalCentimos: 1500,
     limites: { profissionais: 3, servicos: null, marcacoesPorMes: null },
     recursos: {
+      marcacoesOnline: true,
       logotipoECor: true,
       relatoriosMensais: true,
       comissoes: false,
@@ -47,9 +51,10 @@ export const planos: Record<IdPlano, Plano> = {
   profissional: {
     id: "profissional",
     nome: "Profissional",
-    precoMensalCentimos: null,
+    precoMensalCentimos: 2900,
     limites: { profissionais: null, servicos: null, marcacoesPorMes: null },
     recursos: {
+      marcacoesOnline: true,
       logotipoECor: true,
       relatoriosMensais: true,
       comissoes: true,

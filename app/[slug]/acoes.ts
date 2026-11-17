@@ -14,6 +14,7 @@ import {
 } from "@/lib/dados";
 import { horariosDeExemplo } from "@/lib/disponibilidade";
 import type { Hora } from "@/lib/modelo";
+import { planos } from "@/lib/planos";
 import { erro, ERRO_DADOS, sucesso, type Resultado } from "@/lib/resultado";
 import { supabaseConfigurado } from "@/lib/supabase/config";
 import { criarClientePublico } from "@/lib/supabase/servidor";
@@ -24,11 +25,19 @@ import {
 } from "@/lib/validacao";
 
 const ERRO_HORARIOS = "Não foi possível carregar os horários. Tenta novamente.";
+const ERRO_SEM_MARCACAO_ONLINE = "Este salão ainda não recebe marcações online.";
+
+/** O plano do salão tem de incluir marcações online (a base de dados também o confirma). */
+async function aceitaMarcacoes(slug: string) {
+  const salao = await obterSalaoPorSlug(slug);
+  return salao !== null && planos[salao.plano].recursos.marcacoesOnline;
+}
 
 export async function obterHorariosLivres(entrada: unknown): Promise<Resultado<Hora[]>> {
   const dados = esquemaHorariosLivres.safeParse(entrada);
   if (!dados.success) return erro(ERRO_DADOS);
   const { slug, servicoId, data } = dados.data;
+  if (!(await aceitaMarcacoes(slug))) return erro(ERRO_SEM_MARCACAO_ONLINE);
 
   if (!supabaseConfigurado) {
     const salao = await obterSalaoPorSlug(slug);
@@ -65,6 +74,7 @@ const ERROS_MARCACAO: Record<string, string> = {
     "Já tens várias marcações por realizar neste salão. Para marcar mais, contacta o salão.",
   LIMITE_PLANO: "Este salão não está a aceitar marcações online neste mês. Contacta o salão.",
   LIMITE_TEMPORARIO: "Há muitos pedidos neste momento. Tenta de novo daqui a pouco.",
+  SEM_MARCACAO_ONLINE: ERRO_SEM_MARCACAO_ONLINE,
   DADOS_INVALIDOS: ERRO_DADOS,
   SALAO_NAO_ENCONTRADO: ERRO_DADOS,
 };
@@ -75,6 +85,7 @@ export async function criarMarcacao(entrada: unknown): Promise<Resultado> {
     return erro("Verifica o nome e o contacto (telefone ou email).");
   }
   const { slug, servicoId, data, hora, nome, contacto } = dados.data;
+  if (!(await aceitaMarcacoes(slug))) return erro(ERRO_SEM_MARCACAO_ONLINE);
 
   // Modo de demonstração: nada é guardado.
   if (!supabaseConfigurado) return sucesso(undefined);
