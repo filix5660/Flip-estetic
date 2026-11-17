@@ -14,11 +14,24 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import {
   COLUNAS_BLOQUEIO,
+  COLUNAS_CLIENTE,
+  COLUNAS_MARCACAO,
   COLUNAS_SERVICO,
   paraBloqueio,
+  paraCliente,
+  paraMarcacao,
   paraServico,
 } from "@/lib/mapear";
-import type { Bloqueio, EstadoMarcacao, HorarioSemanal, Servico } from "@/lib/modelo";
+import { listarServicos } from "@/lib/dados";
+import { horaEmMinutos, somarMinutos } from "@/lib/datas";
+import type {
+  Bloqueio,
+  Cliente,
+  EstadoMarcacao,
+  HorarioSemanal,
+  Marcacao,
+  Servico,
+} from "@/lib/modelo";
 import { limiteAtingido, planos } from "@/lib/planos";
 import {
   erro,
@@ -34,6 +47,7 @@ import {
   esquemaBloqueio,
   esquemaEstadoMarcacao,
   esquemaHorarios,
+  esquemaMarcacaoManual,
   esquemaPaginaPublica,
   esquemaServico,
   UUID_VALIDO,
@@ -220,6 +234,84 @@ export async function guardarPaginaPublica(entrada: unknown): Promise<Resultado>
 }
 
 // ───────────────────────────── Marcações ─────────────────────────────
+
+const ERROS_MARCACAO_MANUAL: Record<string, string> = {
+  HORARIO_INDISPONIVEL: "Já existe uma marcação nesse horário para este profissional.",
+  DADOS_INVALIDOS: "Verifica os dados: nome, hora e contacto (telefone ou email, opcional).",
+};
+
+/** O dono anota uma marcação na sua agenda (em qualquer plano). */
+export async function anotarMarcacao(
+  entrada: unknown,
+): Promise<Resultado<{ marcacao: Marcacao; cliente: Cliente }>> {
+  const salao = await obterSalaoDaSessao();
+  const dados = esquemaMarcacaoManual.safeParse(entrada);
+  if (!dados.success) return erro(ERROS_MARCACAO_MANUAL.DADOS_INVALIDOS);
+  const { servicoId, profissionalId, data, hora, nome, contacto } = dados.data;
+
+  if (!supabaseConfigurado) {
+    // Modo de demonstração: nada é guardado.
+    const servico = (await listarServicos(salao.id)).find((s) => s.id === servicoId);
+    if (!servico || horaEmMinutos(hora) + servico.duracaoMinutos >= 24 * 60) {
+      return erro(ERROS_MARCACAO_MANUAL.DADOS_INVALIDOS);
+    }
+    const cliente: Cliente = { id: `demo-cli-${Date.now()}`, salaoId: salao.id, nome, contacto };
+    return sucesso({
+      cliente,
+      marcacao: {
+        id: `demo-${Date.now()}`,
+        salaoId: salao.id,
+        profissionalId: profissionalId ?? "",
+        servicoId,
+        clienteId: cliente.id,
+        data,
+        inicio: hora,
+        fim: somarMinutos(hora, servico.duracaoMinutos),
+        estado: "marcada",
+        valorCentimos: null,
+      },
+    });
+  }
+
+  if (!UUID_VALIDO.test(servicoId) || (profissionalId && !UUID_VALIDO.test(profissionalId))) {
+    return erro(ERRO_DADOS);
+  }
+
+  // A função da base de dados confirma que o serviço é do salão deste dono.
+  const supabase = await criarClienteSessao();
+  const { data: id, error } = await supabase.rpc("criar_marcacao_manual", {
+    p_servico_id: servicoId,
+    p_data: data,
+    p_inicio: hora,
+    p_nome: nome,
+    p_contacto: contacto,
+    p_profissional_id: profissionalId,
+  });
+  if (error) {
+    const conhecido = ERROS_MARCACAO_MANUAL[error.message];
+    if (conhecido) return erro(conhecido);
+    return falha("anotar marcação", error);
+  }
+
+  const { data: linha, error: erroLeitura } = await supabase
+    .from("marcacoes")
+    .select(COLUNAS_MARCACAO)
+    .eq("id", id)
+    .eq("salao_id", salao.id)
+    .single();
+  if (erroLeitura) return falha("ler marcação anotada", erroLeitura);
+  const marcacao = paraMarcacao(linha);
+
+  const { data: linhaCliente, error: erroCliente } = await supabase
+    .from("clientes")
+    .select(COLUNAS_CLIENTE)
+    .eq("id", marcacao.clienteId)
+    .single();
+  if (erroCliente) return falha("ler cliente", erroCliente);
+
+  revalidatePath("/gestao", "layout");
+  return sucesso({ marcacao, cliente: paraCliente(linhaCliente) });
+}
 
 export async function alterarEstadoMarcacao(entrada: unknown): Promise<Resultado> {
   const salao = await obterSalaoDaSessao();

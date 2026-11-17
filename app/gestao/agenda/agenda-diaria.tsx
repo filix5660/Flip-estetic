@@ -24,7 +24,7 @@ import type {
   Profissional,
   Servico,
 } from "@/lib/modelo";
-import { alterarEstadoMarcacao } from "../acoes";
+import { alterarEstadoMarcacao, anotarMarcacao } from "../acoes";
 import EtiquetaEstado from "../etiqueta-estado";
 import styles from "./page.module.css";
 
@@ -51,6 +51,17 @@ export default function AgendaDiaria({
   const [aConcluir, setAConcluir] = useState<string | null>(null);
   const [valorTexto, setValorTexto] = useState("");
   const [erroValor, setErroValor] = useState("");
+  const [listaClientes, setListaClientes] = useState(clientes);
+
+  // Formulário "Anotar marcação"
+  const servicosAtivos = servicos.filter((s) => s.ativo);
+  const [aAnotar, setAAnotar] = useState(false);
+  const [servicoNovo, setServicoNovo] = useState(servicosAtivos[0]?.id ?? "");
+  const [profissionalNovo, setProfissionalNovo] = useState(profissionais[0]?.id ?? "");
+  const [horaNova, setHoraNova] = useState("10:00");
+  const [nomeNovo, setNomeNovo] = useState("");
+  const [contactoNovo, setContactoNovo] = useState("");
+  const [erroNovo, setErroNovo] = useState("");
 
   const doDia = marcacoes.filter((m) => m.data === data);
   const resumo = resumirGanhos(doDia, servicos, profissionais);
@@ -59,7 +70,7 @@ export default function AgendaDiaria({
   const nomeServico = (id: string) =>
     servicos.find((s) => s.id === id)?.nome ?? "Serviço";
   const nomeCliente = (id: string) =>
-    clientes.find((c) => c.id === id)?.nome ?? "Cliente";
+    listaClientes.find((c) => c.id === id)?.nome ?? "Cliente";
   const nomeProfissional = (id: string) =>
     profissionais.find((p) => p.id === id)?.nome ?? "";
 
@@ -84,6 +95,37 @@ export default function AgendaDiaria({
       setMarcacoes((atuais) =>
         atuais.map((m) => (m.id === id ? { ...m, estado, valorCentimos } : m)),
       );
+    });
+  }
+
+  function anotar(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setErroNovo("");
+    iniciarTransicao(async () => {
+      const resultado = await anotarMarcacao({
+        servicoId: servicoNovo,
+        profissionalId: variosProfissionais ? profissionalNovo : null,
+        data,
+        hora: horaNova,
+        nome: nomeNovo,
+        contacto: contactoNovo,
+      });
+      if (!resultado.ok) {
+        setErroNovo(resultado.erro);
+        return;
+      }
+      const { marcacao, cliente } = resultado.dados;
+      setListaClientes((atuais) =>
+        atuais.some((c) => c.id === cliente.id) ? atuais : [...atuais, cliente],
+      );
+      setMarcacoes((atuais) =>
+        [...atuais, marcacao].sort((a, b) =>
+          (a.data + a.inicio).localeCompare(b.data + b.inicio),
+        ),
+      );
+      setNomeNovo("");
+      setContactoNovo("");
+      setAAnotar(false);
     });
   }
 
@@ -157,6 +199,91 @@ export default function AgendaDiaria({
           </div>
         )}
       </div>
+
+      {servicosAtivos.length === 0 ? (
+        <p className={styles.empty}>
+          Adiciona um serviço em Serviços para poderes anotar marcações.
+        </p>
+      ) : !aAnotar ? (
+        <button className={styles.annotateButton} type="button" onClick={() => setAAnotar(true)}>
+          + Anotar marcação
+        </button>
+      ) : (
+        <form className={styles.annotateForm} onSubmit={anotar}>
+          <h3>Anotar marcação · {formatarDataLonga(data)}</h3>
+
+          <div className={styles.annotateFields}>
+            <label>
+              Serviço
+              <select value={servicoNovo} onChange={(e) => setServicoNovo(e.target.value)}>
+                {servicosAtivos.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Hora
+              <input
+                type="time"
+                value={horaNova}
+                onChange={(e) => setHoraNova(e.target.value)}
+                required
+              />
+            </label>
+
+            {variosProfissionais && (
+              <label>
+                Profissional
+                <select value={profissionalNovo} onChange={(e) => setProfissionalNovo(e.target.value)}>
+                  {profissionais.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nome}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            <label>
+              Nome do cliente
+              <input
+                value={nomeNovo}
+                onChange={(e) => setNomeNovo(e.target.value)}
+                minLength={2}
+                maxLength={80}
+                required
+              />
+            </label>
+
+            <label>
+              Telefone ou email (opcional)
+              <input
+                value={contactoNovo}
+                onChange={(e) => setContactoNovo(e.target.value)}
+                maxLength={120}
+              />
+            </label>
+          </div>
+
+          {erroNovo && (
+            <p className={styles.error} role="alert">
+              {erroNovo}
+            </p>
+          )}
+
+          <div className={styles.actions}>
+            <button className={styles.confirmButton} type="submit" disabled={aGuardar}>
+              Guardar
+            </button>
+            <button type="button" onClick={() => setAAnotar(false)}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
 
       {erroAgenda && (
         <p className={styles.error} role="alert">

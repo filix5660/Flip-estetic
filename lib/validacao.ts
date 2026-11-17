@@ -69,6 +69,20 @@ export const esquemaEstadoMarcacao = z.object({
   valorCentimos: z.number().int().min(0).max(1_000_000).nullable(),
 });
 
+/** Marcação anotada pelo dono na agenda (o contacto é opcional). */
+export const esquemaMarcacaoManual = z.object({
+  servicoId: id,
+  profissionalId: id.nullable(),
+  data,
+  hora,
+  nome: z.string().trim().min(2).max(80),
+  contacto: z
+    .string()
+    .trim()
+    .max(120)
+    .refine((valor) => valor === "" || EMAIL.test(valor) || TELEFONE.test(valor)),
+});
+
 export const esquemaHorariosLivres = z.object({
   slug,
   servicoId: id,

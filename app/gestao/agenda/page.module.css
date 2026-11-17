@@ -293,3 +293,62 @@ fieldset.actions:disabled button {
   cursor: progress;
   opacity: 0.6;
 }
+
+.annotateButton {
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.annotateButton:hover {
+  background: var(--color-page);
+}
+
+.annotateForm {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-page);
+}
+
+.annotateForm h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.annotateForm h3::first-letter {
+  text-transform: uppercase;
+}
+
+.annotateFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.annotateFields label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.annotateFields input,
+.annotateFields select {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 400;
+}

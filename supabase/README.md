@@ -10,9 +10,14 @@ Enquanto o `.env.local` não existir, a aplicação corre em **modo de demonstra
 
 ## 2. Criar as tabelas
 
-No painel: **SQL Editor → New query**, cola o conteúdo completo de
-`migrations/20261111000000_esquema_inicial.sql` e carrega em **Run**.
-Tem de terminar com "Success. No rows returned".
+No painel: **SQL Editor → New query**. Corre cada ficheiro de `migrations/`, **por ordem**
+(cola o conteúdo completo e carrega em **Run**):
+
+1. `20261111000000_esquema_inicial.sql`
+2. `20261112100000_plano_demo_so_agenda.sql` (plano grátis só com agenda; marcação anotada pelo dono)
+3. `20261112110000_plano_demo_sem_limite_servicos.sql` (plano grátis sem limite de serviços)
+
+Cada um tem de terminar com "Success. No rows returned". Um ficheiro já aplicado não se corre outra vez.
 
 ## 3. Configurar o login
 
