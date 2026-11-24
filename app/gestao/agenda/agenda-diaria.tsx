@@ -26,6 +26,7 @@ import type {
 } from "@/lib/modelo";
 import { alterarEstadoMarcacao, anotarMarcacao } from "../acoes";
 import EtiquetaEstado from "../etiqueta-estado";
+import EtiquetaProfissional, { COR_NEUTRA, coresDaEquipa } from "../etiqueta-profissional";
 import styles from "./page.module.css";
 
 type Props = {
@@ -57,15 +58,23 @@ export default function AgendaDiaria({
   const servicosAtivos = servicos.filter((s) => s.ativo);
   const [aAnotar, setAAnotar] = useState(false);
   const [servicoNovo, setServicoNovo] = useState(servicosAtivos[0]?.id ?? "");
-  const [profissionalNovo, setProfissionalNovo] = useState(profissionais[0]?.id ?? "");
+  // Toda a equipa vem para mostrar nomes antigos; só os ativos recebem marcações.
+  const ativos = profissionais.filter((p) => p.ativo);
+  const [profissionalNovo, setProfissionalNovo] = useState(ativos[0]?.id ?? "");
   const [horaNova, setHoraNova] = useState("10:00");
   const [nomeNovo, setNomeNovo] = useState("");
   const [contactoNovo, setContactoNovo] = useState("");
   const [erroNovo, setErroNovo] = useState("");
 
   const doDia = marcacoes.filter((m) => m.data === data);
-  const resumo = resumirGanhos(doDia, servicos, profissionais);
+  const resumo = resumirGanhos(
+    doDia,
+    servicos,
+    profissionais.filter((p) => p.ativo || doDia.some((m) => m.profissionalId === p.id)),
+  );
   const variosProfissionais = profissionais.length > 1;
+  const cores = coresDaEquipa(profissionais);
+  const corDe = (id: string) => cores.get(id) ?? COR_NEUTRA;
 
   const nomeServico = (id: string) =>
     servicos.find((s) => s.id === id)?.nome ?? "Serviço";
@@ -104,7 +113,7 @@ export default function AgendaDiaria({
     iniciarTransicao(async () => {
       const resultado = await anotarMarcacao({
         servicoId: servicoNovo,
-        profissionalId: variosProfissionais ? profissionalNovo : null,
+        profissionalId: ativos.length > 1 ? profissionalNovo : null,
         data,
         hora: horaNova,
         nome: nomeNovo,
@@ -234,11 +243,11 @@ export default function AgendaDiaria({
               />
             </label>
 
-            {variosProfissionais && (
+            {ativos.length > 1 && (
               <label>
                 Profissional
                 <select value={profissionalNovo} onChange={(e) => setProfissionalNovo(e.target.value)}>
-                  {profissionais.map((p) => (
+                  {ativos.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.nome}
                     </option>
@@ -299,16 +308,28 @@ export default function AgendaDiaria({
             <div className={styles.timeRow} key={m.id}>
               <span>{m.inicio}</span>
 
-              <div className={styles.busy}>
+              <div
+                className={styles.busy}
+                style={
+                  variosProfissionais
+                    ? { borderLeftColor: corDe(m.profissionalId).forte }
+                    : undefined
+                }
+              >
                 <div className={styles.busyTop}>
                   <strong>
                     {m.inicio} – {m.fim}
                   </strong>
                   <EtiquetaEstado estado={m.estado} />
                 </div>
+                {variosProfissionais && (
+                  <EtiquetaProfissional
+                    nome={nomeProfissional(m.profissionalId)}
+                    cor={corDe(m.profissionalId)}
+                  />
+                )}
                 <span>
                   {nomeCliente(m.clienteId)} · {nomeServico(m.servicoId)}
-                  {variosProfissionais && ` · ${nomeProfissional(m.profissionalId)}`}
                 </span>
                 {m.estado === "concluida" && (
                   <span>Recebido: {formatarEuros(valorDaMarcacao(m, servicos))}</span>

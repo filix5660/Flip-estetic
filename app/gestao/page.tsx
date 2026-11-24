@@ -2,7 +2,7 @@ import Link from "next/link";
 import {
   listarClientes,
   listarMarcacoes,
-  listarProfissionais,
+  listarEquipa,
   listarServicos,
   obterAgora,
 } from "@/lib/dados";
@@ -12,6 +12,7 @@ import { resumirGanhos } from "@/lib/ganhos";
 import { planos } from "@/lib/planos";
 import { obterSalaoDaSessao } from "@/lib/sessao";
 import EtiquetaEstado from "./etiqueta-estado";
+import EtiquetaProfissional, { COR_NEUTRA, coresDaEquipa } from "./etiqueta-profissional";
 import NavegacaoGestao from "./navegacao-gestao";
 import styles from "./page.module.css";
 
@@ -19,13 +20,17 @@ export default async function GestaoPage() {
   const salao = await obterSalaoDaSessao();
   const { hoje, hora } = await obterAgora(salao.fusoHorario);
 
-  const [marcacoes, servicos, profissionais, clientes] = await Promise.all([
+  const [marcacoes, servicos, equipa, clientes] = await Promise.all([
     listarMarcacoes(salao.id, hoje, hoje),
     listarServicos(salao.id),
-    listarProfissionais(salao.id),
+    listarEquipa(salao.id),
     listarClientes(salao.id),
   ]);
 
+  // Quem está ativo, mais quem já foi desativado mas tem marcações hoje.
+  const profissionais = equipa.filter(
+    (p) => p.ativo || marcacoes.some((m) => m.profissionalId === p.id),
+  );
   const resumo = resumirGanhos(marcacoes, servicos, profissionais);
   const proxima = marcacoes.find(
     (m) => m.estado === "marcada" && m.inicio >= hora,
@@ -35,6 +40,9 @@ export default async function GestaoPage() {
     servicos.find((s) => s.id === id)?.nome ?? "Serviço";
   const nomeCliente = (id: string) =>
     clientes.find((c) => c.id === id)?.nome ?? "Cliente";
+  // Cores calculadas com toda a equipa: a mesma pessoa tem a mesma cor na Agenda.
+  const cores = coresDaEquipa(equipa);
+  const corDe = (id: string) => cores.get(id) ?? COR_NEUTRA;
   const nomeProfissional = (id: string) =>
     profissionais.find((p) => p.id === id)?.nome ?? "";
 
@@ -111,13 +119,25 @@ export default async function GestaoPage() {
             {marcacoes.map((m) => (
               <div className={styles.timeRow} key={m.id}>
                 <span>{m.inicio}</span>
-                <div className={styles.busy}>
+                <div
+                  className={styles.busy}
+                  style={
+                    profissionais.length > 1
+                      ? { borderLeftColor: corDe(m.profissionalId).forte }
+                      : undefined
+                  }
+                >
                   <strong>
                     {m.inicio} – {m.fim}
                   </strong>
+                  {profissionais.length > 1 && (
+                    <EtiquetaProfissional
+                      nome={nomeProfissional(m.profissionalId)}
+                      cor={corDe(m.profissionalId)}
+                    />
+                  )}
                   <span>
                     {nomeCliente(m.clienteId)} · {nomeServico(m.servicoId)}
-                    {profissionais.length > 1 && ` · ${nomeProfissional(m.profissionalId)}`}
                   </span>
                   <EtiquetaEstado estado={m.estado} />
                 </div>

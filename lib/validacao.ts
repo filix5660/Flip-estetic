@@ -32,6 +32,34 @@ export const esquemaServico = z.object({
   precoCentimos: z.number().int().min(0).max(1_000_000),
 });
 
+export const esquemaProfissional = z.object({
+  id: id.optional(),
+  nome: z.string().trim().min(1).max(60),
+});
+
+export const esquemaAtivoProfissional = z.object({
+  id,
+  ativo: z.boolean(),
+});
+
+/** Só os dias diferentes do horário do salão (lista vazia = igual ao salão). */
+export const esquemaHorarioProfissional = z.object({
+  profissionalId: id,
+  dias: z
+    .array(
+      z
+        .object({
+          diaSemana: z.number().int().min(0).max(6),
+          trabalha: z.boolean(),
+          entrada: hora,
+          saida: hora,
+        })
+        .refine((d) => d.saida > d.entrada),
+    )
+    .max(7)
+    .refine((dias) => new Set(dias.map((d) => d.diaSemana)).size === dias.length),
+});
+
 export const esquemaHorarios = z
   .array(
     z
@@ -87,11 +115,14 @@ export const esquemaHorariosLivres = z.object({
   slug,
   servicoId: id,
   data,
+  /** null = qualquer profissional. */
+  profissionalId: id.nullable().default(null),
 });
 
 export const esquemaNovaMarcacao = z.object({
   slug,
   servicoId: id,
+  profissionalId: id.nullable().default(null),
   data,
   hora,
   nome: z.string().trim().min(2).max(80),

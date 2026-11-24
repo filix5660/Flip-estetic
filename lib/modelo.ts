@@ -66,6 +66,19 @@ export type HorarioSemanal = {
   fecho: Hora;
 };
 
+/**
+ * Horário próprio de um profissional num dia da semana. Sem registo para um
+ * dia, o profissional segue o horário do salão.
+ */
+export type HorarioProfissional = {
+  profissionalId: string;
+  diaSemana: DiaSemana;
+  /** false = folga nesse dia. */
+  trabalha: boolean;
+  entrada: Hora;
+  saida: Hora;
+};
+
 /** Intervalo fechado numa data específica (salão inteiro ou um profissional). */
 export type Bloqueio = {
   id: string;

@@ -9,6 +9,7 @@ export default function NavegacaoGestao() {
       <Link href="/gestao">Início</Link>
       <Link href="/gestao/agenda">Agenda</Link>
       <Link href="/gestao/servicos">Serviços</Link>
+      <Link href="/gestao/equipa">Equipa</Link>
       <Link href="/gestao/horarios">Horários</Link>
       <Link href="/gestao/pagina-publica">Página pública</Link>
       {supabaseConfigurado && (

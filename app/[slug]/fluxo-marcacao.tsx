@@ -22,9 +22,13 @@ import {
 import { criarMarcacao, obterHorariosLivres } from "./acoes";
 import styles from "./page.module.css";
 
+/** O que a página pública sabe de cada profissional: só o nome. */
+type ProfissionalPublico = { id: string; nome: string };
+
 type Props = {
   salao: Salao;
   servicos: Servico[];
+  profissionais: ProfissionalPublico[];
   horarios: HorarioSemanal[];
   hoje: Data;
   /** false no modo de demonstração: a marcação não fica guardada. */
@@ -36,6 +40,7 @@ type Props = {
 export default function FluxoMarcacao({
   salao,
   servicos,
+  profissionais,
   horarios,
   hoje,
   guardaMarcacoes,
@@ -43,6 +48,8 @@ export default function FluxoMarcacao({
 }: Props) {
   const [etapa, setEtapa] = useState(0);
   const [servico, setServico] = useState<Servico | null>(null);
+  /** null = qualquer profissional. */
+  const [profissional, setProfissional] = useState<ProfissionalPublico | null>(null);
   const [data, setData] = useState<Data | null>(null);
   const [hora, setHora] = useState<Hora | null>(null);
   const [horariosLivres, setHorariosLivres] = useState<Hora[]>([]);
@@ -53,9 +60,19 @@ export default function FluxoMarcacao({
 
   const diasFechados = horarios.filter((h) => !h.aberto).map((h) => h.diaSemana);
 
+  // Só se pergunta "com quem?" quando há mais do que uma pessoa a atender.
+  const escolheProfissional = profissionais.length > 1;
+
   function voltar() {
     setErro("");
-    setEtapa((atual) => Math.max(0, atual - 1));
+    setEtapa((atual) => (atual === 3 && !escolheProfissional ? 1 : Math.max(0, atual - 1)));
+  }
+
+  function escolherProfissional(p: ProfissionalPublico | null) {
+    setProfissional(p);
+    setData(null);
+    setHora(null);
+    setEtapa(3);
   }
 
   // A disponibilidade vem sempre do servidor: é ele que sabe o que está ocupado.
@@ -66,6 +83,7 @@ export default function FluxoMarcacao({
       const resultado = await obterHorariosLivres({
         slug: salao.slug,
         servicoId,
+        profissionalId: profissional?.id ?? null,
         data: dia,
       });
       if (resultado.ok) setHorariosLivres(resultado.dados);
@@ -82,19 +100,20 @@ export default function FluxoMarcacao({
       const resultado = await criarMarcacao({
         slug: salao.slug,
         servicoId: servico.id,
+        profissionalId: profissional?.id ?? null,
         data,
         hora,
         nome: nomeCliente,
         contacto: contactoCliente,
       });
-      if (resultado.ok) setEtapa(5);
+      if (resultado.ok) setEtapa(6);
       else setErro(resultado.erro);
     });
   }
 
   const resumo =
     servico && data
-      ? `${servico.nome} · ${formatarDataCurta(data)}${hora ? ` às ${hora}` : ""}`
+      ? `${servico.nome}${profissional ? ` com ${profissional.nome}` : ""} · ${formatarDataCurta(data)}${hora ? ` às ${hora}` : ""}`
       : "";
 
   return (
@@ -161,8 +180,9 @@ export default function FluxoMarcacao({
                 type="button"
                 onClick={() => {
                   setServico(s);
+                  setProfissional(null);
                   setHora(null);
-                  setEtapa(2);
+                  setEtapa(escolheProfissional ? 2 : 3);
                 }}
               >
                 {s.nome} · {formatarDuracao(s.duracaoMinutos)} · {formatarEuros(s.precoCentimos)}
@@ -176,6 +196,35 @@ export default function FluxoMarcacao({
         )}
 
         {etapa === 2 && servico && (
+          <>
+            <h2>Com quem?</h2>
+            <p className={styles.details}>{servico.nome}</p>
+
+            <button
+              className={styles.optionButton}
+              type="button"
+              onClick={() => escolherProfissional(null)}
+            >
+              Qualquer profissional
+            </button>
+            {profissionais.map((p) => (
+              <button
+                key={p.id}
+                className={styles.optionButton}
+                type="button"
+                onClick={() => escolherProfissional(p)}
+              >
+                {p.nome}
+              </button>
+            ))}
+
+            <button className={styles.backButton} type="button" onClick={voltar}>
+              Voltar
+            </button>
+          </>
+        )}
+
+        {etapa === 3 && servico && (
           <>
             <div className={styles.calendar}>
               <h2>Escolhe uma data</h2>
@@ -193,7 +242,7 @@ export default function FluxoMarcacao({
                   const escolhida = deDateLocal(dia);
                   setData(escolhida);
                   setHora(null);
-                  setEtapa(3);
+                  setEtapa(4);
                   carregarHorarios(servico.id, escolhida);
                 }}
               />
@@ -205,7 +254,7 @@ export default function FluxoMarcacao({
           </>
         )}
 
-        {etapa === 3 && (
+        {etapa === 4 && (
           <>
             <h2>Escolhe um horário</h2>
             <p className={styles.details}>{resumo}</p>
@@ -230,7 +279,7 @@ export default function FluxoMarcacao({
                   type="button"
                   onClick={() => {
                     setHora(h);
-                    setEtapa(4);
+                    setEtapa(5);
                   }}
                 >
                   {h}
@@ -244,7 +293,7 @@ export default function FluxoMarcacao({
           </>
         )}
 
-        {etapa === 4 && (
+        {etapa === 5 && (
           <>
             <h2>Os teus dados</h2>
             <p className={styles.details}>{resumo}</p>
@@ -302,12 +351,13 @@ export default function FluxoMarcacao({
           </>
         )}
 
-        {etapa === 5 && servico && data && hora && (
+        {etapa === 6 && servico && data && hora && (
           <div className={styles.confirmation}>
             <h2>Marcação confirmada!</h2>
             <p>Cliente: {nomeCliente}</p>
             <p>Contacto: {contactoCliente}</p>
             <p>Serviço: {servico.nome}</p>
+            {profissional && <p>Profissional: {profissional.nome}</p>}
             <p>Data: {formatarDataNumerica(data)}</p>
             <p>Horário: {hora}</p>
             {!guardaMarcacoes && (

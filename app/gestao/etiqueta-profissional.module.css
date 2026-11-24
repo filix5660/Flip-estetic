@@ -1,0 +1,42 @@
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 12px 3px 3px;
+  border-radius: 999px;
+  background: var(--fundo);
+  color: var(--texto);
+}
+
+.inicial {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--forte);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.nome {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Lido pelos leitores de ecrã, escondido no ecrã. */
+.paraLeitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
