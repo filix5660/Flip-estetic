@@ -16,10 +16,12 @@ import {
   COLUNAS_BLOQUEIO,
   COLUNAS_CLIENTE,
   COLUNAS_MARCACAO,
+  COLUNAS_PROFISSIONAL,
   COLUNAS_SERVICO,
   paraBloqueio,
   paraCliente,
   paraMarcacao,
+  paraProfissional,
   paraServico,
 } from "@/lib/mapear";
 import { listarServicos } from "@/lib/dados";
@@ -30,6 +32,7 @@ import type {
   EstadoMarcacao,
   HorarioSemanal,
   Marcacao,
+  Profissional,
   Servico,
 } from "@/lib/modelo";
 import { limiteAtingido, planos } from "@/lib/planos";
@@ -44,9 +47,12 @@ import { obterSalaoDaSessao } from "@/lib/sessao";
 import { supabaseConfigurado } from "@/lib/supabase/config";
 import { criarClienteSessao } from "@/lib/supabase/servidor";
 import {
+  esquemaAtivoProfissional,
   esquemaBloqueio,
   esquemaEstadoMarcacao,
+  esquemaHorarioProfissional,
   esquemaHorarios,
+  esquemaProfissional,
   esquemaMarcacaoManual,
   esquemaPaginaPublica,
   esquemaServico,
@@ -141,6 +147,121 @@ export async function removerServico(id: unknown): Promise<Resultado> {
     .eq("id", id)
     .eq("salao_id", salao.id);
   if (error) return falha("remover serviço", error);
+  atualizarPaginas(salao.slug);
+  return sucesso(undefined);
+}
+
+// ───────────────────────────── Equipa ─────────────────────────────
+
+const ERROS_EQUIPA: Record<string, string> = {
+  ULTIMO_PROFISSIONAL: "O salão precisa de pelo menos um profissional ativo.",
+  TEM_MARCACOES:
+    "Este profissional ainda tem marcações por realizar. Cancela-as ou passa-as a outra pessoa primeiro.",
+  NAO_ENCONTRADO: ERRO_DADOS,
+  DADOS_INVALIDOS: "Verifica os horários: a saída tem de ser depois da entrada.",
+};
+
+/** Erros conhecidos da base de dados → mensagem para o dono. */
+function falhaEquipa(contexto: string, e: PostgrestError) {
+  const codigo = Object.keys(ERROS_EQUIPA).find((c) => e.message.includes(c));
+  if (codigo) return erro(ERROS_EQUIPA[codigo]);
+  return falha(contexto, e);
+}
+
+/** Cria (sem id) ou muda o nome de um profissional. */
+export async function guardarProfissional(
+  entrada: unknown,
+): Promise<Resultado<Profissional>> {
+  const salao = await obterSalaoDaSessao();
+  const dados = esquemaProfissional.safeParse(entrada);
+  if (!dados.success) return erro(ERRO_DADOS);
+  const { id, nome } = dados.data;
+
+  if (!supabaseConfigurado) {
+    return sucesso({ id: id ?? `demo-${Date.now()}`, salaoId: salao.id, nome, ativo: true });
+  }
+
+  const supabase = await criarClienteSessao();
+
+  if (id === undefined) {
+    const { count } = await supabase
+      .from("profissionais")
+      .select("id", { count: "exact", head: true })
+      .eq("salao_id", salao.id)
+      .eq("ativo", true);
+    if (limiteAtingido(salao.plano, "profissionais", count ?? 0)) {
+      return erro(ERRO_LIMITE);
+    }
+
+    const { data, error } = await supabase
+      .from("profissionais")
+      .insert({ salao_id: salao.id, nome })
+      .select(COLUNAS_PROFISSIONAL)
+      .single();
+    if (error) return falhaEquipa("criar profissional", error);
+    atualizarPaginas(salao.slug);
+    return sucesso(paraProfissional(data));
+  }
+
+  if (!UUID_VALIDO.test(id)) return erro(ERRO_DADOS);
+  const { data, error } = await supabase
+    .from("profissionais")
+    .update({ nome })
+    .eq("id", id)
+    .eq("salao_id", salao.id)
+    .select(COLUNAS_PROFISSIONAL)
+    .maybeSingle();
+  if (error) return falhaEquipa("editar profissional", error);
+  if (!data) return erro(ERRO_GENERICO);
+  atualizarPaginas(salao.slug);
+  return sucesso(paraProfissional(data));
+}
+
+/**
+ * Desativa ou reativa. Desativado, deixa de receber marcações, mas o histórico
+ * (e os ganhos antigos) mantém-se. A base de dados recusa desativar o último
+ * profissional ou quem ainda tem marcações por realizar.
+ */
+export async function alterarAtivoProfissional(entrada: unknown): Promise<Resultado> {
+  const salao = await obterSalaoDaSessao();
+  const dados = esquemaAtivoProfissional.safeParse(entrada);
+  if (!dados.success) return erro(ERRO_DADOS);
+  if (!supabaseConfigurado) return sucesso(undefined);
+  if (!UUID_VALIDO.test(dados.data.id)) return erro(ERRO_DADOS);
+
+  const supabase = await criarClienteSessao();
+  const { data, error } = await supabase
+    .from("profissionais")
+    .update({ ativo: dados.data.ativo })
+    .eq("id", dados.data.id)
+    .eq("salao_id", salao.id)
+    .select("id")
+    .maybeSingle();
+  if (error) return falhaEquipa("ativar/desativar profissional", error);
+  if (!data) return erro(ERRO_GENERICO);
+  atualizarPaginas(salao.slug);
+  return sucesso(undefined);
+}
+
+export async function guardarHorarioProfissional(entrada: unknown): Promise<Resultado> {
+  const salao = await obterSalaoDaSessao();
+  const dados = esquemaHorarioProfissional.safeParse(entrada);
+  if (!dados.success) return erro(ERROS_EQUIPA.DADOS_INVALIDOS);
+  if (!supabaseConfigurado) return sucesso(undefined);
+  if (!UUID_VALIDO.test(dados.data.profissionalId)) return erro(ERRO_DADOS);
+
+  // A função confirma que o profissional é do salão de quem pede.
+  const supabase = await criarClienteSessao();
+  const { error } = await supabase.rpc("definir_horario_profissional", {
+    p_profissional_id: dados.data.profissionalId,
+    p_dias: dados.data.dias.map((d) => ({
+      dia_semana: d.diaSemana,
+      trabalha: d.trabalha,
+      entrada: d.entrada,
+      saida: d.saida,
+    })),
+  });
+  if (error) return falhaEquipa("guardar horário do profissional", error);
   atualizarPaginas(salao.slug);
   return sucesso(undefined);
 }

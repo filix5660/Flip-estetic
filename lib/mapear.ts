@@ -7,6 +7,7 @@ import type {
   Cliente,
   DiaSemana,
   EstadoMarcacao,
+  HorarioProfissional,
   HorarioSemanal,
   IdPlano,
   Marcacao,
@@ -78,6 +79,19 @@ export function paraHorario(l: Linha): HorarioSemanal {
     aberto: l.aberto === true,
     abertura: hora(l.abertura),
     fecho: hora(l.fecho),
+  };
+}
+
+export const COLUNAS_HORARIO_PROFISSIONAL =
+  "profissional_id, dia_semana, trabalha, entrada, saida";
+
+export function paraHorarioProfissional(l: Linha): HorarioProfissional {
+  return {
+    profissionalId: texto(l.profissional_id),
+    diaSemana: numero(l.dia_semana) as DiaSemana,
+    trabalha: l.trabalha === true,
+    entrada: hora(l.entrada),
+    saida: hora(l.saida),
   };
 }
 

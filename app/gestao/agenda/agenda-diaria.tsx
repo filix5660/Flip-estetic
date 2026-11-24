@@ -57,14 +57,20 @@ export default function AgendaDiaria({
   const servicosAtivos = servicos.filter((s) => s.ativo);
   const [aAnotar, setAAnotar] = useState(false);
   const [servicoNovo, setServicoNovo] = useState(servicosAtivos[0]?.id ?? "");
-  const [profissionalNovo, setProfissionalNovo] = useState(profissionais[0]?.id ?? "");
+  // Toda a equipa vem para mostrar nomes antigos; só os ativos recebem marcações.
+  const ativos = profissionais.filter((p) => p.ativo);
+  const [profissionalNovo, setProfissionalNovo] = useState(ativos[0]?.id ?? "");
   const [horaNova, setHoraNova] = useState("10:00");
   const [nomeNovo, setNomeNovo] = useState("");
   const [contactoNovo, setContactoNovo] = useState("");
   const [erroNovo, setErroNovo] = useState("");
 
   const doDia = marcacoes.filter((m) => m.data === data);
-  const resumo = resumirGanhos(doDia, servicos, profissionais);
+  const resumo = resumirGanhos(
+    doDia,
+    servicos,
+    profissionais.filter((p) => p.ativo || doDia.some((m) => m.profissionalId === p.id)),
+  );
   const variosProfissionais = profissionais.length > 1;
 
   const nomeServico = (id: string) =>
@@ -104,7 +110,7 @@ export default function AgendaDiaria({
     iniciarTransicao(async () => {
       const resultado = await anotarMarcacao({
         servicoId: servicoNovo,
-        profissionalId: variosProfissionais ? profissionalNovo : null,
+        profissionalId: ativos.length > 1 ? profissionalNovo : null,
         data,
         hora: horaNova,
         nome: nomeNovo,
@@ -234,11 +240,11 @@ export default function AgendaDiaria({
               />
             </label>
 
-            {variosProfissionais && (
+            {ativos.length > 1 && (
               <label>
                 Profissional
                 <select value={profissionalNovo} onChange={(e) => setProfissionalNovo(e.target.value)}>
-                  {profissionais.map((p) => (
+                  {ativos.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.nome}
                     </option>

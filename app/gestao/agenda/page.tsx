@@ -1,7 +1,7 @@
 import {
   listarClientes,
   listarMarcacoes,
-  listarProfissionais,
+  listarEquipa,
   listarServicos,
   obterAgora,
 } from "@/lib/dados";
@@ -18,7 +18,7 @@ export default async function AgendaPage() {
   const [marcacoes, servicos, profissionais, clientes] = await Promise.all([
     listarMarcacoes(salao.id, somarDias(hoje, -30), somarDias(hoje, 60)),
     listarServicos(salao.id),
-    listarProfissionais(salao.id),
+    listarEquipa(salao.id),
     listarClientes(salao.id),
   ]);
 

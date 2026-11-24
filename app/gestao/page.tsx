@@ -2,7 +2,7 @@ import Link from "next/link";
 import {
   listarClientes,
   listarMarcacoes,
-  listarProfissionais,
+  listarEquipa,
   listarServicos,
   obterAgora,
 } from "@/lib/dados";
@@ -19,13 +19,17 @@ export default async function GestaoPage() {
   const salao = await obterSalaoDaSessao();
   const { hoje, hora } = await obterAgora(salao.fusoHorario);
 
-  const [marcacoes, servicos, profissionais, clientes] = await Promise.all([
+  const [marcacoes, servicos, equipa, clientes] = await Promise.all([
     listarMarcacoes(salao.id, hoje, hoje),
     listarServicos(salao.id),
-    listarProfissionais(salao.id),
+    listarEquipa(salao.id),
     listarClientes(salao.id),
   ]);
 
+  // Quem está ativo, mais quem já foi desativado mas tem marcações hoje.
+  const profissionais = equipa.filter(
+    (p) => p.ativo || marcacoes.some((m) => m.profissionalId === p.id),
+  );
   const resumo = resumirGanhos(marcacoes, servicos, profissionais);
   const proxima = marcacoes.find(
     (m) => m.estado === "marcada" && m.inicio >= hora,

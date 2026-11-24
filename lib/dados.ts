@@ -19,6 +19,7 @@ import {
   COLUNAS_BLOQUEIO,
   COLUNAS_CLIENTE,
   COLUNAS_HORARIO,
+  COLUNAS_HORARIO_PROFISSIONAL,
   COLUNAS_MARCACAO,
   COLUNAS_PROFISSIONAL,
   COLUNAS_SALAO,
@@ -26,6 +27,7 @@ import {
   paraBloqueio,
   paraCliente,
   paraHorario,
+  paraHorarioProfissional,
   paraMarcacao,
   paraProfissional,
   paraSalao,
@@ -109,6 +111,36 @@ export async function obterHorariosSemanais(salaoId: string) {
 }
 
 // ───────────────── Leituras da gestão (exigem sessão) ─────────────────
+
+/** Toda a equipa, incluindo quem foi desativado. */
+export async function listarEquipa(salaoId: string) {
+  if (!supabaseConfigurado) {
+    return exemplo.profissionais.filter((p) => p.salaoId === salaoId);
+  }
+
+  const supabase = await criarClienteSessao();
+  const { data, error } = await supabase
+    .from("profissionais")
+    .select(COLUNAS_PROFISSIONAL)
+    .eq("salao_id", salaoId)
+    .order("ativo", { ascending: false })
+    .order("nome");
+  if (error) throw falha("listarEquipa", error);
+  return data.map(paraProfissional);
+}
+
+/** Dias em que cada profissional tem horário diferente do salão. */
+export async function listarHorariosProfissionais(salaoId: string) {
+  if (!supabaseConfigurado) return [];
+
+  const supabase = await criarClienteSessao();
+  const { data, error } = await supabase
+    .from("horarios_profissionais")
+    .select(COLUNAS_HORARIO_PROFISSIONAL)
+    .eq("salao_id", salaoId);
+  if (error) throw falha("listarHorariosProfissionais", error);
+  return data.map(paraHorarioProfissional);
+}
 
 export async function listarClientes(salaoId: string) {
   if (!supabaseConfigurado) {

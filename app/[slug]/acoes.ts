@@ -2,8 +2,9 @@
 
 // Ações da página pública de marcação. Quem as chama é um visitante sem
 // conta, por isso o navegador só envia o que escolheu (serviço, dia, hora,
-// nome, contacto). Preço, duração, profissional e disponibilidade são sempre
-// decididos pela base de dados (funções horarios_livres e criar_marcacao).
+// nome, contacto e, se quiser, o profissional). Preço, duração e quem está
+// livre são sempre decididos pela base de dados (funções horarios_livres e
+// criar_marcacao).
 
 import { revalidatePath } from "next/cache";
 import {
@@ -36,7 +37,7 @@ async function aceitaMarcacoes(slug: string) {
 export async function obterHorariosLivres(entrada: unknown): Promise<Resultado<Hora[]>> {
   const dados = esquemaHorariosLivres.safeParse(entrada);
   if (!dados.success) return erro(ERRO_DADOS);
-  const { slug, servicoId, data } = dados.data;
+  const { slug, servicoId, data, profissionalId } = dados.data;
   if (!(await aceitaMarcacoes(slug))) return erro(ERRO_SEM_MARCACAO_ONLINE);
 
   if (!supabaseConfigurado) {
@@ -53,10 +54,13 @@ export async function obterHorariosLivres(entrada: unknown): Promise<Resultado<H
   }
 
   if (!UUID_VALIDO.test(servicoId)) return erro(ERRO_DADOS);
+  if (profissionalId !== null && !UUID_VALIDO.test(profissionalId)) return erro(ERRO_DADOS);
   const { data: linhas, error } = await criarClientePublico().rpc("horarios_livres", {
     p_slug: slug,
     p_servico_id: servicoId,
     p_data: data,
+    // Só envia quando o cliente escolheu alguém (null = qualquer profissional).
+    ...(profissionalId ? { p_profissional_id: profissionalId } : {}),
   });
   if (error) {
     console.error("[marcacao] horarios_livres:", error.code, error.message);
@@ -84,13 +88,15 @@ export async function criarMarcacao(entrada: unknown): Promise<Resultado> {
   if (!dados.success) {
     return erro("Verifica o nome e o contacto (telefone ou email).");
   }
-  const { slug, servicoId, data, hora, nome, contacto } = dados.data;
+  const { slug, servicoId, profissionalId, data, hora, nome, contacto } = dados.data;
   if (!(await aceitaMarcacoes(slug))) return erro(ERRO_SEM_MARCACAO_ONLINE);
 
   // Modo de demonstração: nada é guardado.
   if (!supabaseConfigurado) return sucesso(undefined);
 
   if (!UUID_VALIDO.test(servicoId)) return erro(ERRO_DADOS);
+  if (profissionalId !== null && !UUID_VALIDO.test(profissionalId)) return erro(ERRO_DADOS);
+  // A base de dados confirma que o profissional é deste salão e está livre.
   const { error } = await criarClientePublico().rpc("criar_marcacao", {
     p_slug: slug,
     p_servico_id: servicoId,
@@ -98,6 +104,7 @@ export async function criarMarcacao(entrada: unknown): Promise<Resultado> {
     p_inicio: hora,
     p_nome: nome,
     p_contacto: contacto,
+    ...(profissionalId ? { p_profissional_id: profissionalId } : {}),
   });
   if (error) {
     const conhecido = ERROS_MARCACAO[error.message];

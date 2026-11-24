@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
+  listarProfissionais,
   listarServicos,
   obterAgora,
   obterHorariosSemanais,
@@ -28,8 +29,9 @@ export default async function PaginaSalao(props: PageProps<"/[slug]">) {
   const salao = await obterSalaoPorSlug(slug);
   if (!salao) notFound();
 
-  const [servicos, horarios, agora] = await Promise.all([
+  const [servicos, profissionais, horarios, agora] = await Promise.all([
     listarServicos(salao.id),
+    listarProfissionais(salao.id),
     obterHorariosSemanais(salao.id),
     obterAgora(salao.fusoHorario),
   ]);
@@ -38,6 +40,8 @@ export default async function PaginaSalao(props: PageProps<"/[slug]">) {
     <FluxoMarcacao
       salao={salao}
       servicos={servicos}
+      // Só o nome: o cliente escolhe por quem quer ser atendido.
+      profissionais={profissionais.map((p) => ({ id: p.id, nome: p.nome }))}
       horarios={horarios}
       hoje={agora.hoje}
       guardaMarcacoes={supabaseConfigurado}
