@@ -378,6 +378,11 @@
   font-size: 20px;
 }
 
+.paraQuem {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+}
+
 .preco {
   margin: 12px 0 20px;
   font-size: 36px;

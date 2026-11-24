@@ -1,0 +1,212 @@
+.pagina {
+  width: min(100% - 32px, 1180px);
+  margin: 0 auto;
+  padding: 24px 0 64px;
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text);
+  font-size: 18px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.topoAcoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sair {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.sair:hover {
+  background: var(--color-page);
+}
+
+.etiqueta {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--color-button);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pagina h1 {
+  margin: 0 0 16px;
+  font-size: 32px;
+}
+
+.resumo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.resumo div {
+  display: grid;
+  gap: 2px;
+  min-width: 120px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.resumo span {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.resumo strong {
+  font-size: 22px;
+}
+
+.ajuda {
+  max-width: 760px;
+  margin: 0 0 20px;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.cartao {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.pesquisa {
+  width: 100%;
+  max-width: 420px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+}
+
+.vazio {
+  color: var(--color-muted);
+}
+
+.tabelaContentor {
+  overflow-x: auto;
+}
+
+.tabela {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+}
+
+.tabela th {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.tabela td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #eee9e2;
+  vertical-align: top;
+}
+
+.tabela tr:last-child td {
+  border-bottom: 0;
+}
+
+.nome {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.email {
+  word-break: break-all;
+}
+
+.secundario {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.numero {
+  font-variant-numeric: tabular-nums;
+}
+
+.tabela select,
+.nota {
+  padding: 7px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.cortesia {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nota {
+  display: block;
+  width: 100%;
+  min-width: 180px;
+  margin-top: 6px;
+}
+
+.tabela button {
+  padding: 7px 14px;
+  border: 1px solid var(--color-button);
+  border-radius: 8px;
+  background: var(--color-button);
+  color: #fff;
+  font-weight: 600;
+}
+
+.tabela button:disabled {
+  border-color: var(--color-border);
+  background: var(--color-page);
+  color: var(--color-muted);
+  cursor: default;
+}
+
+.ok,
+.erro {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.ok {
+  color: #2f6b38;
+}
+
+.erro {
+  color: #9a3d2c;
+}

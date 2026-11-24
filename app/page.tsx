@@ -31,7 +31,7 @@ const BENEFICIOS = [
   {
     titulo: "Para a equipa toda",
     texto:
-      "Cada profissional com a sua agenda. Serve salões de cabeleireiro, estética, unhas e barbearias.",
+      "No plano Profissional, cada profissional tem a sua agenda. Serve salões de cabeleireiro, estética, unhas e barbearias.",
   },
 ];
 
@@ -79,6 +79,12 @@ const SERVICOS_EXEMPLO = [
 ];
 
 const HORARIOS_EXEMPLO = ["09:30", "10:00", "11:00", "14:30", "15:00", "16:00"];
+
+const PARA_QUEM: Record<Plano["id"], string> = {
+  demo: "Para organizares a tua agenda",
+  essencial: "Para quem trabalha sozinho",
+  profissional: "Para salões com equipa",
+};
 
 function recursosDoPlano(plano: Plano) {
   const { limites, recursos } = plano;
@@ -251,6 +257,7 @@ export default function Inicio() {
                 >
                   {destaque && <p className={styles.selo}>Recomendado</p>}
                   <h3>{plano.nome}</h3>
+                  <p className={styles.paraQuem}>{PARA_QUEM[plano.id]}</p>
                   <p className={styles.preco}>
                     {plano.precoMensalCentimos === 0 ? (
                       "Grátis"

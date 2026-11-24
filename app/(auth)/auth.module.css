@@ -151,3 +151,38 @@
   color: var(--color-accent);
   font-weight: 600;
 }
+
+.campoSenha {
+  position: relative;
+  display: block;
+}
+
+.form .campoSenha input {
+  padding-right: 48px;
+}
+
+.verSenha {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.verSenha:hover {
+  color: var(--color-text);
+}
+
+.verSenha:focus-visible {
+  outline: 3px solid #b9946b;
+  outline-offset: 1px;
+}

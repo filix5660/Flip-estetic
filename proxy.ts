@@ -8,5 +8,5 @@ export async function proxy(request: NextRequest) {
 // Só corre onde a sessão interessa. As páginas públicas de marcação não
 // usam sessão, por isso ficam de fora (mais rápidas e sem cookies).
 export const config = {
-  matcher: ["/gestao/:path*", "/comecar", "/entrar", "/criar-conta"],
+  matcher: ["/gestao/:path*", "/comecar", "/entrar", "/criar-conta", "/admin"],
 };

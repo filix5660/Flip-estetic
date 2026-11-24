@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { obterSalaoOpcional, obterUtilizador } from "@/lib/sessao";
+import { eAdmin, obterSalaoOpcional, obterUtilizador } from "@/lib/sessao";
 import { supabaseConfigurado } from "@/lib/supabase/config";
 import { sair } from "../acoes";
 import styles from "../auth.module.css";
@@ -17,6 +17,8 @@ export default async function ComecarPage() {
 
   const salao = await obterSalaoOpcional();
   if (salao) redirect("/gestao");
+  // Contas de administrador não precisam de salão.
+  if (await eAdmin()) redirect("/admin");
 
   return (
     <main className={styles.page}>

@@ -40,7 +40,7 @@ export const planos: Record<IdPlano, Plano> = {
     id: "essencial",
     nome: "Essencial",
     precoMensalCentimos: 1500,
-    limites: { profissionais: 3, servicos: null, marcacoesPorMes: null },
+    limites: { profissionais: 1, servicos: null, marcacoesPorMes: null },
     recursos: {
       marcacoesOnline: true,
       logotipoECor: true,

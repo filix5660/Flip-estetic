@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { nomesTipoSalao, type TipoSalao } from "@/lib/modelo";
@@ -23,6 +24,33 @@ function Avisos({ estado }: { estado: EstadoFormulario }) {
   );
 }
 
+/** Campo de palavra-passe com botão para mostrar ou esconder o que se escreve. */
+function CampoPalavraPasse(
+  props: Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">,
+) {
+  const [visivel, setVisivel] = useState(false);
+
+  return (
+    <span className={styles.campoSenha}>
+      <input {...props} type={visivel ? "text" : "password"} />
+      <button
+        type="button"
+        className={styles.verSenha}
+        onClick={() => setVisivel((v) => !v)}
+        aria-label={visivel ? "Esconder palavra-passe" : "Mostrar palavra-passe"}
+        aria-pressed={visivel}
+        title={visivel ? "Esconder palavra-passe" : "Mostrar palavra-passe"}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+          <circle cx="12" cy="12" r="3" />
+          {visivel && <path d="M3 3l18 18" />}
+        </svg>
+      </button>
+    </span>
+  );
+}
+
 export function FormEntrar() {
   const [estado, acao, aEnviar] = useActionState(entrar, null);
 
@@ -34,9 +62,8 @@ export function FormEntrar() {
       </label>
       <label>
         Palavra-passe
-        <input
+        <CampoPalavraPasse
           name="palavraPasse"
-          type="password"
           autoComplete="current-password"
           maxLength={200}
           required
@@ -77,9 +104,8 @@ export function FormCriarConta({ minimo }: { minimo: number }) {
       </label>
       <label>
         Palavra-passe
-        <input
+        <CampoPalavraPasse
           name="palavraPasse"
-          type="password"
           autoComplete="new-password"
           minLength={minimo}
           maxLength={72}
