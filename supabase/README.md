@@ -19,6 +19,7 @@ No painel: **SQL Editor → New query**. Corre cada ficheiro de `migrations/`, *
 4. `20261117000000_essencial_um_profissional.sql` (plano Essencial só com 1 profissional)
 5. `20261117010000_painel_admin.sql` (painel de controlo em /admin)
 6. `20261124000000_gestao_profissionais.sql` (equipa: horário de cada profissional e escolha na marcação)
+7. `20261124010000_permissoes_horarios_profissionais.sql` (retira permissões a mais na tabela de horários da equipa)
 
 Cada um tem de terminar com "Success. No rows returned". Um ficheiro já aplicado não se corre outra vez.
 
