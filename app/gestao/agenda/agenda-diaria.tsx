@@ -26,6 +26,7 @@ import type {
 } from "@/lib/modelo";
 import { alterarEstadoMarcacao, anotarMarcacao } from "../acoes";
 import EtiquetaEstado from "../etiqueta-estado";
+import EtiquetaProfissional, { COR_NEUTRA, coresDaEquipa } from "../etiqueta-profissional";
 import styles from "./page.module.css";
 
 type Props = {
@@ -72,6 +73,8 @@ export default function AgendaDiaria({
     profissionais.filter((p) => p.ativo || doDia.some((m) => m.profissionalId === p.id)),
   );
   const variosProfissionais = profissionais.length > 1;
+  const cores = coresDaEquipa(profissionais);
+  const corDe = (id: string) => cores.get(id) ?? COR_NEUTRA;
 
   const nomeServico = (id: string) =>
     servicos.find((s) => s.id === id)?.nome ?? "Serviço";
@@ -305,16 +308,28 @@ export default function AgendaDiaria({
             <div className={styles.timeRow} key={m.id}>
               <span>{m.inicio}</span>
 
-              <div className={styles.busy}>
+              <div
+                className={styles.busy}
+                style={
+                  variosProfissionais
+                    ? { borderLeftColor: corDe(m.profissionalId).forte }
+                    : undefined
+                }
+              >
                 <div className={styles.busyTop}>
                   <strong>
                     {m.inicio} – {m.fim}
                   </strong>
                   <EtiquetaEstado estado={m.estado} />
                 </div>
+                {variosProfissionais && (
+                  <EtiquetaProfissional
+                    nome={nomeProfissional(m.profissionalId)}
+                    cor={corDe(m.profissionalId)}
+                  />
+                )}
                 <span>
                   {nomeCliente(m.clienteId)} · {nomeServico(m.servicoId)}
-                  {variosProfissionais && ` · ${nomeProfissional(m.profissionalId)}`}
                 </span>
                 {m.estado === "concluida" && (
                   <span>Recebido: {formatarEuros(valorDaMarcacao(m, servicos))}</span>
