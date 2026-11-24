@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { sair } from "@/app/(auth)/acoes";
 import Logotipo from "@/components/logotipo";
 import { planos } from "@/lib/planos";
 import styles from "./page.module.css";
@@ -50,7 +51,14 @@ export default async function PainelAdmin() {
           <Logotipo tamanho={28} />
           Flip
         </Link>
-        <span className={styles.etiqueta}>Painel de controlo</span>
+        <div className={styles.topoAcoes}>
+          <span className={styles.etiqueta}>Painel de controlo</span>
+          <form action={sair}>
+            <button type="submit" className={styles.sair}>
+              Sair
+            </button>
+          </form>
+        </div>
       </header>
 
       <h1>Salões</h1>

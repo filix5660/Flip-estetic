@@ -1,7 +1,7 @@
 import "server-only";
 
 import { notFound, redirect } from "next/navigation";
-import { obterUtilizador } from "@/lib/sessao";
+import { eAdmin, obterUtilizador } from "@/lib/sessao";
 import { supabaseConfigurado } from "@/lib/supabase/config";
 import { criarClienteSessao } from "@/lib/supabase/servidor";
 
@@ -15,13 +15,7 @@ export async function exigirAdmin() {
   if (!supabaseConfigurado) notFound();
   if (!(await obterUtilizador())) redirect("/entrar");
 
-  const supabase = await criarClienteSessao();
-  const { data, error } = await supabase.rpc("sou_admin");
-  if (error) {
-    console.error("[admin] sou_admin:", error.code, error.message);
-    notFound();
-  }
-  if (data !== true) notFound();
+  if (!(await eAdmin())) notFound();
 
-  return supabase;
+  return criarClienteSessao();
 }

@@ -26,6 +26,22 @@ export const obterUtilizador = cache(async () => {
   return { id };
 });
 
+/**
+ * true se a conta com sessão for administradora da plataforma.
+ * Quem decide é a base de dados (lista privada de administradores).
+ */
+export const eAdmin = cache(async () => {
+  if (!(await obterUtilizador())) return false;
+
+  const supabase = await criarClienteSessao();
+  const { data, error } = await supabase.rpc("sou_admin");
+  if (error) {
+    console.error("[sessao] sou_admin:", error.code, error.message);
+    return false;
+  }
+  return data === true;
+});
+
 /** Salão do utilizador com sessão, ou null se ainda não criou nenhum. */
 export const obterSalaoOpcional = cache(async (): Promise<Salao | null> => {
   const utilizador = await obterUtilizador();
@@ -60,7 +76,8 @@ export const obterSalaoOpcional = cache(async (): Promise<Salao | null> => {
 /**
  * Salão de quem está a usar a área de gestão. Todas as páginas e ações da
  * gestão começam por aqui: sem sessão vai para /entrar, sem salão para
- * /comecar. O id do salão vem SEMPRE daqui, nunca do navegador.
+ * /comecar (ou para o painel /admin, se a conta for só de administrador).
+ * O id do salão vem SEMPRE daqui, nunca do navegador.
  *
  * Sem Supabase configurado (modo de demonstração) devolve o salão de exemplo.
  */
@@ -75,7 +92,7 @@ export async function obterSalaoDaSessao(): Promise<Salao> {
   if (!utilizador) redirect("/entrar");
 
   const salao = await obterSalaoOpcional();
-  if (!salao) redirect("/comecar");
+  if (!salao) redirect((await eAdmin()) ? "/admin" : "/comecar");
 
   return salao;
 }
